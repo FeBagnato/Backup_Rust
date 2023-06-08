@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 rpassword = "7.2.0"
+copy_dir = "0.1.2"
+sevenz-rust = {version = "0.3", features=["compress", "aes256"]}
