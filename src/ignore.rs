@@ -5,6 +5,10 @@ pub fn start_ignore(){
     fs::create_dir(format!("{home_dir}/IgnoredFiles")).unwrap();
 
     for ignored_file in fs::read_to_string("config/ignore_list.conf").unwrap().lines() {
+        if ignored_file.is_empty() || ignored_file.starts_with("#") {
+            continue;
+        }
+
         fs::rename(ignored_file, format!("{home_dir}/IgnoredFiles/{}", 
             ignored_file.replace("/", "_"))).unwrap();
     }
@@ -15,6 +19,10 @@ pub fn end_ignore(){
     let home_dir = env!("HOME");
 
     for ignored_file in fs::read_to_string("config/ignore_list.conf").unwrap().lines() {
+        if ignored_file.is_empty() || ignored_file.starts_with("#") {
+            continue;
+        }
+
         fs::rename(format!("{home_dir}/IgnoredFiles/{}",
             ignored_file.replace("/", "_")), ignored_file).unwrap();
     }
