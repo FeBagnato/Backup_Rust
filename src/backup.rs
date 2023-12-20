@@ -45,3 +45,31 @@ pub fn init(dir_name: &str, pass: &String){
 
     fs::remove_dir_all(format!("{current_dir}/Backup {dir_name}")).unwrap();
 }
+
+pub fn get_directories() -> Vec<String> {
+    let file_config_dirs = format!("{}/.config/user-dirs.dirs", env!("HOME").to_string());
+    let mut vec_dir: Vec<String> = vec![];
+
+    for line in fs::read_to_string(file_config_dirs).unwrap().lines() {
+        // Ignore line if starts with "#"
+        if line.starts_with("#") { continue; }
+
+        if line.contains("DESKTOP") || line.contains("DOWNLOAD") || line.contains("DOCUMENTS") ||
+        line.contains("MUSIC") || line.contains("PICTURES") || line.contains("VIDEOS") {
+            let directory = match line.rsplit("/").next() {
+                Some(i) => i,
+                None => panic!("Something is wrong with the file .config/user-dirs.dirs")
+            };
+
+            // Remove the last quote from the string and add the result to the vector
+            vec_dir.push(
+                match directory.split("\"").next() {
+                    Some(i) => i.to_string(),
+                    None => panic!("Something is wrong with the file .config/user-dirs.dirs")
+                }
+            );
+        }
+    }
+
+    return vec_dir;
+}
