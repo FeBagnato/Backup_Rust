@@ -64,7 +64,7 @@ pub fn get_directories() -> Vec<String> {
             // Remove the last quote from the string and add the result to the vector
             vec_dir.push(
                 match directory.split("\"").next() {
-                    Some(i) => i.to_string(),
+                    Some(i) => String::from(i),
                     None => panic!("Something is wrong with the file .config/user-dirs.dirs")
                 }
             );
