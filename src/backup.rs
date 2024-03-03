@@ -7,7 +7,7 @@ pub fn init(dir_name: &str, pass: &String){
     //TODO: VERIFICAR SE TODOS OS UNWRAPS SAO SAFE
     let current_dir = format!("{}/{dir_name}", env!("HOME"));
     
-    println!("Copiando os itens de {dir_name}");
+    println!("Adicionando arquivos de {dir_name}");
 
     let mut sz_writer = SevenZWriter::create(format!("Backup {dir_name}.7z")).unwrap();
     sz_writer.set_content_methods(vec![
@@ -72,10 +72,10 @@ fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathB
                     SevenZArchiveEntry::from_path(iten.as_path(), format!("Backup {dir_name}/{iten_name}")),
                     Some(fs::File::open(iten.as_path()).unwrap())
                 ).unwrap();
+
+                println!("Adicionando \x1b[32m{iten_name}\x1b[0m");
             }
         }
-
-        // println!("Copiando \x1b[32m{iten_name}\x1b[0m");
     }
 
     else if let Some(iten_name) = iten.file_name() {
@@ -86,6 +86,6 @@ fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathB
             Some(fs::File::open(iten.as_path()).unwrap())
         ).unwrap();
 
-        // println!("Copiando \x1b[32m{iten_name}\x1b[0m");
+        println!("Adicionando \x1b[32m{iten_name}\x1b[0m");
     }
 }
