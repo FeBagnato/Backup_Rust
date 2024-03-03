@@ -1,49 +1,27 @@
 use std::env;
-use std::{fs, path};
-use copy_dir::copy_dir;
-use sevenz_rust;
+use std::path::PathBuf;
+use std::{fs, io::Seek};
+use sevenz_rust::{self, SevenZWriter, SevenZArchiveEntry, lzma};
 
 pub fn init(dir_name: &str, pass: &String){
     //TODO: VERIFICAR SE TODOS OS UNWRAPS SAO SAFE
-    let home_dir = env!("HOME");
-    let current_dir = format!("{home_dir}/{dir_name}");
+    let current_dir = format!("{}/{dir_name}", env!("HOME"));
     
-    fs::create_dir(format!("{current_dir}/Backup {dir_name}")).unwrap();
-    fs::create_dir(format!("{current_dir}/Backup {dir_name}/Backup {dir_name}")).unwrap();
     println!("Copiando os itens de {dir_name}");
+
+    let mut sz_writer = SevenZWriter::create(format!("Backup {dir_name}.7z")).unwrap();
+    sz_writer.set_content_methods(vec![
+        sevenz_rust::AesEncoderOptions::new(pass.as_str().into()).into(),
+        lzma::LZMA2Options::with_preset(9).into()
+    ]);
 
     let list_itens = fs::read_dir(format!("{current_dir}")).unwrap();
     for iten in list_itens {
         let iten = iten.unwrap().path();
 
-        if iten.as_path() == path::Path::new(format!("{current_dir}/Backup {dir_name}").as_str())
-            { continue; }
-
-        if iten.as_path().is_dir() {
-            if let Some(iten_name) = iten.file_name() {
-                let iten_name = iten_name.to_os_string().into_string().unwrap();
-                
-                copy_dir(&iten, format!("{current_dir}/Backup {dir_name}/Backup {dir_name}/{iten_name}"))
-                    .unwrap();
-                println!("Copiando \x1b[32m{iten_name}\x1b[0m");
-            }
-        }
-
-        else if let Some(iten_name) = iten.file_name() {
-            let iten_name = iten_name.to_os_string().into_string().unwrap();
-            fs::copy(iten, format!("{current_dir}/Backup {dir_name}/Backup {dir_name}/{}", 
-                iten_name)).unwrap();
-            
-            println!("Copiando \x1b[32m{iten_name}\x1b[0m");
-        }
+        add_recursive_files(&mut sz_writer, iten, &dir_name);
     }
-
-    sevenz_rust::compress_to_path_encrypted(format!("{current_dir}/Backup {dir_name}"),
-        format!("{current_dir}/Backup {dir_name}.7z"), 
-        pass.as_str().into())
-    .unwrap();
-
-    fs::remove_dir_all(format!("{current_dir}/Backup {dir_name}")).unwrap();
+    sz_writer.finish().unwrap();
 }
 
 pub fn get_directories() -> Vec<String> {
@@ -72,4 +50,42 @@ pub fn get_directories() -> Vec<String> {
     }
 
     return vec_dir;
+}
+
+fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathBuf, dir_name: &str) where W: Seek {
+    //TODO: Ignore if symbolic link
+    let current_dir = format!("{}/{dir_name}", env!("HOME"));
+
+    if iten.as_path().is_dir() {
+        let subdir_itens = fs::read_dir(iten.as_path()).unwrap();
+        for iten in subdir_itens {
+            let iten = iten.unwrap().path();
+
+            if iten.as_path().is_dir() {
+                add_recursive_files(sz, iten, &dir_name);
+            }
+            else {
+                let iten_name = String::from(iten.to_str().unwrap());
+                let iten_name = iten_name.replace(format!("{current_dir}/").as_str(), "");
+
+                sz.push_archive_entry(
+                    SevenZArchiveEntry::from_path(iten.as_path(), format!("Backup {dir_name}/{iten_name}")),
+                    Some(fs::File::open(iten.as_path()).unwrap())
+                ).unwrap();
+            }
+        }
+
+        // println!("Copiando \x1b[32m{iten_name}\x1b[0m");
+    }
+
+    else if let Some(iten_name) = iten.file_name() {
+        let iten_name = iten_name.to_os_string().into_string().unwrap();
+
+        sz.push_archive_entry(
+            SevenZArchiveEntry::from_path(iten.as_path(), format!("Backup {dir_name}/{iten_name}")),
+            Some(fs::File::open(iten.as_path()).unwrap())
+        ).unwrap();
+
+        // println!("Copiando \x1b[32m{iten_name}\x1b[0m");
+    }
 }
