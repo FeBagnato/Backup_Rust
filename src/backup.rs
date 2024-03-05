@@ -54,8 +54,21 @@ pub fn get_directories() -> Vec<String> {
 
 fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathBuf, dir_name: &str) where W: Seek {
     //TODO: Ignore if symbolic link
+    //TODO: If a broken symlink is found, the program panics. I need to fix it
     let current_dir = format!("{}/{dir_name}", env!("HOME"));
 
+    // Verify if iten is the .7z backup file
+    if iten.to_str().unwrap().contains(".7z") {
+        let vec_bkp_dir = get_directories();
+        for bkp_dir in vec_bkp_dir {
+            if String::from(iten.to_str().unwrap()).contains(format!("Backup {bkp_dir}.7z").as_str()) {
+                return;
+            }
+        }
+    }
+
+    // Add file to .7z
+    println!("Adicionando \x1b[32m{}\x1b[0m", String::from(iten.to_str().unwrap()));
     if iten.as_path().is_dir() {
         let subdir_itens = fs::read_dir(iten.as_path()).unwrap();
         for iten in subdir_itens {
@@ -72,12 +85,9 @@ fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathB
                     SevenZArchiveEntry::from_path(iten.as_path(), format!("Backup {dir_name}/{iten_name}")),
                     Some(fs::File::open(iten.as_path()).unwrap())
                 ).unwrap();
-
-                println!("Adicionando \x1b[32m{iten_name}\x1b[0m");
             }
         }
     }
-
     else if let Some(iten_name) = iten.file_name() {
         let iten_name = iten_name.to_os_string().into_string().unwrap();
 
