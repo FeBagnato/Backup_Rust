@@ -68,34 +68,22 @@ fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathB
     }
 
     // Add file to .7z
-    println!("Adicionando \x1b[32m{}\x1b[0m", String::from(iten.to_str().unwrap()));
     if iten.as_path().is_dir() {
         let subdir_itens = fs::read_dir(iten.as_path()).unwrap();
         for iten in subdir_itens {
             let iten = iten.unwrap().path();
 
-            if iten.as_path().is_dir() {
-                add_recursive_files(sz, iten, &dir_name);
-            }
-            else {
-                let iten_name = String::from(iten.to_str().unwrap());
-                let iten_name = iten_name.replace(format!("{current_dir}/").as_str(), "");
-
-                sz.push_archive_entry(
-                    SevenZArchiveEntry::from_path(iten.as_path(), format!("Backup {dir_name}/{iten_name}")),
-                    Some(fs::File::open(iten.as_path()).unwrap())
-                ).unwrap();
-            }
+            add_recursive_files(sz, iten, &dir_name);
         }
     }
-    else if let Some(iten_name) = iten.file_name() {
-        let iten_name = iten_name.to_os_string().into_string().unwrap();
+    else {
+        let iten_name = String::from(iten.to_str().unwrap()
+            .replace(format!("{current_dir}/").as_str(), ""));
 
+        println!("Adicionando \x1b[32m{iten_name}\x1b[0m");
         sz.push_archive_entry(
             SevenZArchiveEntry::from_path(iten.as_path(), format!("Backup {dir_name}/{iten_name}")),
             Some(fs::File::open(iten.as_path()).unwrap())
         ).unwrap();
-
-        println!("Adicionando \x1b[32m{iten_name}\x1b[0m");
     }
 }
