@@ -53,8 +53,6 @@ pub fn get_directories() -> Vec<String> {
 }
 
 fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathBuf, dir_name: &str) where W: Seek {
-    //TODO: Ignore if symbolic link
-    //TODO: If a broken symlink is found, the program panics. I need to fix it
     let current_dir = format!("{}/{dir_name}", env!("HOME"));
 
     // Verify if iten is the .7z backup file
@@ -65,6 +63,11 @@ fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathB
                 return;
             }
         }
+    }
+
+    // Ignore if symbolic link
+    if iten.as_path().is_symlink() {
+        return;
     }
 
     // Add file to .7z
