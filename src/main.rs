@@ -11,9 +11,10 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
     let vec_dir = backup::get_directories();
     let mut pass_error = true;
     while pass_error {
-        let password = rpassword::prompt_password("Digite a senha: ").unwrap();
+        let password = rpassword::prompt_password("Digite a senha: ")
+            .expect("\nERRO: Não foi possível pegar a senha\n\n");
 
-        if password == rpassword::prompt_password("Digite a senha novamente: ").unwrap() {
+        if password == rpassword::prompt_password("Digite a senha novamente: ").expect("\nERRO: Não foi possível pegar a senha\n\n"){
             //TODO: Run verify code here!
             ignore::start_ignore();
 
@@ -31,7 +32,8 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
             }
 
             for handle in count_handle {
-                handle.join().unwrap();
+                handle.join()
+                    .expect("\nERRO: Falha durante a execução da thread\n\n");
             }
 
             ignore::end_ignore();
