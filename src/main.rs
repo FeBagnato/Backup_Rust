@@ -1,8 +1,10 @@
 use rpassword;
+use verify::{start_verify, VerifyError};
 use std::{thread::{self, JoinHandle}, sync::Arc};
 
 mod backup;
 mod ignore;
+mod verify;
 
 fn main() {
     println!("\x1b[33mCaso tenha algum arquivo ou pasta que você não queira adicionar ao backup, 
@@ -16,6 +18,18 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
 
         if password == rpassword::prompt_password("Digite a senha novamente: ").expect("\nERRO: Não foi possível pegar a senha\n\n"){
             //TODO: Run verify code here!
+            match start_verify() {
+                Ok(_) => {},
+                Err(VerifyError::ILFileNotFound(file)) => {
+                    println!("Erro ao verificar o ignore_list.conf\nNão foi possível encontrar o arquivo \"{file}\"");
+                    break;
+                },
+                Err(VerifyError::ILFileNotAcesseble(file)) => {
+                    println!("Erro ao verificar o ignore_list.conf\nNão foi possível verificar a existência do arquivo \"{file}\"");
+                    break;
+                }
+            }
+
             ignore::start_ignore();
 
             let arc_password = Arc::new(password);
