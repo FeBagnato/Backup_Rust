@@ -1,4 +1,4 @@
-use std::{fs::{self, File}, path::Path, result::Result};
+use std::{fs, path::Path, result::Result};
 
 pub enum VerifyError {
     ILFileNotFound(String),
