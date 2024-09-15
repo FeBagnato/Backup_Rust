@@ -27,6 +27,11 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
                 Err(VerifyError::ILFileNotAcesseble(file)) => {
                     println!("Erro ao verificar o ignore_list.conf\nNão foi possível verificar a existência do arquivo \"{file}\"");
                     break;
+                },
+
+                Err(VerifyError::BKPFileExists(file)) => {
+                    println!("Erro: O arquivo \"{file}\" já existe\nRemova este arquivo antes de continuar");
+                    break;
                 }
             }
 
