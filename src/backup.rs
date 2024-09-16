@@ -32,7 +32,6 @@ pub fn get_directories() -> Vec<String> {
     let file_config_dirs = format!("{}/.config/user-dirs.dirs", env!("HOME").to_string());
     let mut vec_dir: Vec<String> = vec![];
 
-    // TODO: Verificar se arquivo do sistema existe (verify.rs)
     for line in fs::read_to_string(file_config_dirs).unwrap().lines() {
         // Ignore line if starts with "#"
         if line.starts_with("#") { continue; }
@@ -61,13 +60,11 @@ fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathB
     let current_dir = format!("{}/{dir_name}", env!("HOME"));
 
     // Verify if iten is the .7z backup file
-    // if iten.to_str().unwrap().contains(".7z") {
     if let Some(iten_str) = iten.to_str() {
         if iten_str.contains(".7z") {
             let vec_bkp_dir = get_directories();
             for bkp_dir in vec_bkp_dir {
                 if iten_str.contains(format!("Backup {bkp_dir}.7z").as_str()) {
-                // if String::from(iten.to_str().unwrap()).contains(format!("Backup {bkp_dir}.7z").as_str()) {
                     return;
                 }
             }

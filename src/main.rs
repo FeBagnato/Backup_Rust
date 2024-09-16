@@ -10,14 +10,13 @@ fn main() {
     println!("\x1b[33mCaso tenha algum arquivo ou pasta que você não queira adicionar ao backup, 
 coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
 
-    let vec_dir = backup::get_directories();
+    let mut vec_dir: Vec<String>;
     let mut pass_error = true;
     while pass_error {
         let password = rpassword::prompt_password("Digite a senha: ")
             .expect("\nERRO: Não foi possível pegar a senha\n\n");
 
         if password == rpassword::prompt_password("Digite a senha novamente: ").expect("\nERRO: Não foi possível pegar a senha\n\n"){
-            //TODO: Run verify code here!
             match start_verify() {
                 Ok(_) => {},
                 Err(VerifyError::ILFileNotFound(file)) => {
@@ -32,8 +31,15 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
                 Err(VerifyError::BKPFileExists(file)) => {
                     println!("Erro: O arquivo \"{file}\" já existe\nRemova este arquivo antes de continuar");
                     break;
+                },
+
+                Err(VerifyError::UserDirConfigNotFound) => {
+                    println!("Erro: Não foi possível encontrar o arquivo \"{}/.config/user-dirs.dirs\"", env!("HOME"));
+                    break;
                 }
             }
+
+            vec_dir = backup::get_directories();
 
             ignore::start_ignore();
 

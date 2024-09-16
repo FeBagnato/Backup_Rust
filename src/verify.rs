@@ -5,10 +5,16 @@ use crate::backup::get_directories;
 pub enum VerifyError {
     ILFileNotFound(String),
     ILFileNotAcesseble(String),
-    BKPFileExists(String)
+    BKPFileExists(String),
+    UserDirConfigNotFound
 }
 
 pub fn start_verify<'a>() -> Result<(), VerifyError> {
+    match User_dirs_verify() {
+        Ok(_) => {},
+        Err(err) => { return Err(err) }
+    }
+
     match BKP_files_verify() {
         Ok(_) => {},
         Err(err) => { return Err(err) }
@@ -61,4 +67,13 @@ fn BKP_files_verify() -> Result<(), VerifyError> {
     }
 
     Ok(())
+}
+
+#[allow(non_snake_case)]
+fn User_dirs_verify() -> Result<(), VerifyError> {
+    if Path::new(&format!("{}/.config/user-dirs.dirs", env!("HOME"))).exists() {
+        return Ok(());
+    }
+
+    return Err(VerifyError::UserDirConfigNotFound);
 }
