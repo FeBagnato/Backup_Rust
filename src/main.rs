@@ -20,21 +20,21 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
             match start_verify() {
                 Ok(_) => {},
                 Err(VerifyError::ILFileNotFound(file)) => {
-                    println!("Erro ao verificar o ignore_list.conf\nNão foi possível encontrar o arquivo \"{file}\"");
+                    println!("\x1b[31m\nErro:\x1b[0m ignore_list.conf. Não foi possível encontrar o arquivo \"{file}\"");
                     break;
                 },
                 Err(VerifyError::ILFileNotAcesseble(file)) => {
-                    println!("Erro ao verificar o ignore_list.conf\nNão foi possível verificar a existência do arquivo \"{file}\"");
+                    println!("\x1b[31m\nErro:\x1b[0m ignore_list.conf. Não foi possível verificar a existência do arquivo \"{file}\"");
                     break;
                 },
 
                 Err(VerifyError::BKPFileExists(file)) => {
-                    println!("Erro: O arquivo \"{file}\" já existe\nRemova este arquivo antes de continuar");
+                    println!("\x1b[31m\nErro:\x1b[0m O arquivo \"{file}\" já existe\nRemova este arquivo antes de continuar");
                     break;
                 },
 
                 Err(VerifyError::UserDirConfigNotFound) => {
-                    println!("Erro: Não foi possível encontrar o arquivo \"{}/.config/user-dirs.dirs\"", env!("HOME"));
+                    println!("\x1b[31m\nErro:\x1b[0m Não foi possível encontrar o arquivo \"{}/.config/user-dirs.dirs\"", env!("HOME"));
                     break;
                 }
             }
@@ -65,7 +65,7 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
             pass_error = false;
         }
         else{
-            println!("\x1b[31mSenha incorreta!\nTente novamente\n\x1b[0m");
+            println!("\x1b[31m\nSenha incorreta!\n\x1b[0mTente novamente\n");
         }
     }
 }
