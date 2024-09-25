@@ -28,32 +28,44 @@ pub fn init(dir_name: &str, pass: &String){
         .expect("\nERRO: Não foi possível finalizar a compressão\n\n");
 }
 
+static mut VEC_USER_DIR:Vec<String> = vec![];
+
 pub fn get_directories() -> Vec<String> {
     let file_config_dirs = format!("{}/.config/user-dirs.dirs", env!("HOME").to_string());
-    let mut vec_dir: Vec<String> = vec![];
 
-    for line in fs::read_to_string(file_config_dirs).unwrap().lines() {
-        // Ignore line if starts with "#"
-        if line.starts_with("#") { continue; }
+    let vec_dir_len: usize;
+    unsafe {
+        vec_dir_len = VEC_USER_DIR.len();
+    }
 
-        if line.contains("DESKTOP") || line.contains("DOWNLOAD") || line.contains("DOCUMENTS") ||
-        line.contains("MUSIC") || line.contains("PICTURES") || line.contains("VIDEOS") {
-            let directory = match line.rsplit("/").next() {
-                Some(i) => i,
-                None => panic!("Something is wrong with the file .config/user-dirs.dirs")
-            };
+    if vec_dir_len == 0 {
+        for line in fs::read_to_string(file_config_dirs).unwrap().lines() {
+            // Ignore line if starts with "#"
+            if line.starts_with("#") { continue; }
 
-            // Remove the last quote from the string and add the result to the vector
-            vec_dir.push(
-                match directory.split("\"").next() {
-                    Some(i) => String::from(i),
+            if line.contains("DESKTOP") || line.contains("DOWNLOAD") || line.contains("DOCUMENTS") ||
+            line.contains("MUSIC") || line.contains("PICTURES") || line.contains("VIDEOS") {
+                let directory = match line.rsplit("/").next() {
+                    Some(i) => i,
                     None => panic!("Something is wrong with the file .config/user-dirs.dirs")
+                };
+
+                // Remove the last quote from the string and add the result to the vector
+                unsafe {
+                    VEC_USER_DIR.push(
+                        match directory.split("\"").next() {
+                            Some(i) => String::from(i),
+                            None => panic!("Something is wrong with the file .config/user-dirs.dirs")
+                        }
+                    );
                 }
-            );
+            }
         }
     }
 
-    return vec_dir;
+    unsafe {
+        return VEC_USER_DIR.clone();
+    }
 }
 
 fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathBuf, dir_name: &str) where W: Seek {
