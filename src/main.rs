@@ -10,62 +10,64 @@ fn main() {
     println!("\x1b[33mCaso tenha algum arquivo ou pasta que você não queira adicionar ao backup, 
 coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
 
-    let mut vec_dir: Vec<String>;
-    let mut pass_error = true;
-    while pass_error {
-        let password = rpassword::prompt_password("Digite a senha: ")
-            .expect("\nERRO: Não foi possível pegar a senha\n\n");
+    // Verify errors before start
+    match start_verify() {
+        Ok(_) => {},
+        Err(VerifyError::ILFileNotFound(file)) => {
+            println!("\x1b[31m\nErro:\x1b[0m ignore_list.conf. Não foi possível encontrar o arquivo \"{file}\"");
+            std::process::exit(1);
+        },
+        Err(VerifyError::ILFileNotAcesseble(file)) => {
+            println!("\x1b[31m\nErro:\x1b[0m ignore_list.conf. Não foi possível verificar a existência do arquivo \"{file}\"");
+            std::process::exit(1);
+        },
 
-        if password == rpassword::prompt_password("Digite a senha novamente: ").expect("\nERRO: Não foi possível pegar a senha\n\n"){
-            match start_verify() {
-                Ok(_) => {},
-                Err(VerifyError::ILFileNotFound(file)) => {
-                    println!("\x1b[31m\nErro:\x1b[0m ignore_list.conf. Não foi possível encontrar o arquivo \"{file}\"");
-                    break;
-                },
-                Err(VerifyError::ILFileNotAcesseble(file)) => {
-                    println!("\x1b[31m\nErro:\x1b[0m ignore_list.conf. Não foi possível verificar a existência do arquivo \"{file}\"");
-                    break;
-                },
+        Err(VerifyError::BKPFileExists(file)) => {
+            println!("\x1b[31m\nErro:\x1b[0m O arquivo \"{file}\" já existe\nRemova este arquivo antes de continuar");
+            std::process::exit(1);
+        },
 
-                Err(VerifyError::BKPFileExists(file)) => {
-                    println!("\x1b[31m\nErro:\x1b[0m O arquivo \"{file}\" já existe\nRemova este arquivo antes de continuar");
-                    break;
-                },
-
-                Err(VerifyError::UserDirConfigNotFound) => {
-                    println!("\x1b[31m\nErro:\x1b[0m Não foi possível encontrar o arquivo \"{}/.config/user-dirs.dirs\"", env!("HOME"));
-                    break;
-                }
-            }
-
-            vec_dir = backup::get_directories();
-
-            ignore::start_ignore();
-
-            let arc_password = Arc::new(password);
-            let mut count_handle: Vec<JoinHandle<_>> = Vec::new();
-            for dir in vec_dir.iter() {
-                let dir = dir.clone();
-                let arc_password = Arc::clone(&arc_password);
-
-                let handle = thread::spawn(move || {
-                    backup::init(&dir, arc_password.as_ref());
-                });
-
-                count_handle.push(handle);
-            }
-
-            for handle in count_handle {
-                handle.join()
-                    .expect("\nERRO: Falha durante a execução da thread\n\n");
-            }
-
-            ignore::end_ignore();
-            pass_error = false;
-        }
-        else{
-            println!("\x1b[31m\nSenha incorreta!\n\x1b[0mTente novamente\n");
+        Err(VerifyError::UserDirConfigNotFound) => {
+            println!("\x1b[31m\nErro:\x1b[0m Não foi possível encontrar o arquivo \"{}/.config/user-dirs.dirs\"", env!("HOME"));
+            std::process::exit(1);
         }
     }
+
+    // Get password
+    let password = loop {
+        let pass1 = rpassword::prompt_password("Digite a senha: ")
+            .expect("\nERRO: Não foi possível pegar a senha\n\n");
+        let pass2 = rpassword::prompt_password("Digite a senha novamente: ")
+            .expect("\nERRO: Não foi possível pegar a senha\n\n");
+
+        if pass1 == pass2 {
+            break pass1;
+        }
+        println!("\x1b[31m\nSenha incorreta!\n\x1b[0mTente novamente\n");
+    };
+
+    let vec_dir: Vec<String> = backup::get_directories();
+
+    ignore::start_ignore();
+
+    // Start backup process
+    let arc_password = Arc::new(password);
+    let mut count_handle: Vec<JoinHandle<_>> = Vec::new();
+    for dir in vec_dir.iter() {
+        let dir = dir.clone();
+        let arc_password = Arc::clone(&arc_password);
+
+        let handle = thread::spawn(move || {
+            backup::init(&dir, arc_password.as_ref());
+        });
+
+        count_handle.push(handle);
+    }
+
+    for handle in count_handle {
+        handle.join()
+            .expect("\nERRO: Falha durante a execução da thread\n\n");
+    }
+
+    ignore::end_ignore();
 }
