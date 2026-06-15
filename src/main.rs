@@ -46,7 +46,7 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
         println!("\x1b[31m\nSenha incorreta!\n\x1b[0mTente novamente\n");
     };
 
-    let vec_dir: Vec<String> = backup::get_directories();
+    let vec_dir = backup::get_directories();
 
     ignore::start_ignore();
 

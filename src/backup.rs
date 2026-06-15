@@ -1,5 +1,6 @@
 use std::env;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use std::{fs, io::Seek};
 use sevenz_rust::{self, SevenZWriter, SevenZArchiveEntry, lzma};
 
@@ -28,44 +29,32 @@ pub fn init(dir_name: &str, pass: &String){
         .expect("\nERRO: Não foi possível finalizar a compressão\n\n");
 }
 
-static mut VEC_USER_DIR:Vec<String> = vec![];
+static VEC_USER_DIR: OnceLock<Vec<String>> = OnceLock::new();
 
-pub fn get_directories() -> Vec<String> {
-    let file_config_dirs = format!("{}/.config/user-dirs.dirs", env!("HOME").to_string());
+pub fn get_directories() -> &'static Vec<String> {
+    VEC_USER_DIR.get_or_init(|| {
+        let file_config_dirs = format!("{}/.config/user-dirs.dirs", env!("HOME"));
+        let mut dirs = Vec::new();
 
-    let vec_dir_len: usize;
-    unsafe {
-        vec_dir_len = VEC_USER_DIR.len();
-    }
+        for line in fs::read_to_string(&file_config_dirs)
+            .expect("Could not read ~/.config/user-dirs.dirs")
+            .lines()
+        {
+            if line.starts_with('#') { continue; }
 
-    if vec_dir_len == 0 {
-        for line in fs::read_to_string(file_config_dirs).unwrap().lines() {
-            // Ignore line if starts with "#"
-            if line.starts_with("#") { continue; }
-
-            if line.contains("DESKTOP") || line.contains("DOWNLOAD") || line.contains("DOCUMENTS") ||
-            line.contains("MUSIC") || line.contains("PICTURES") || line.contains("VIDEOS") {
-                let directory = match line.rsplit("/").next() {
-                    Some(i) => i,
-                    None => panic!("Something is wrong with the file .config/user-dirs.dirs")
-                };
-
-                // Remove the last quote from the string and add the result to the vector
-                unsafe {
-                    VEC_USER_DIR.push(
-                        match directory.split("\"").next() {
-                            Some(i) => String::from(i),
-                            None => panic!("Something is wrong with the file .config/user-dirs.dirs")
-                        }
-                    );
-                }
+            if line.contains("DESKTOP") || line.contains("DOWNLOAD")
+                || line.contains("DOCUMENTS") || line.contains("MUSIC")
+                || line.contains("PICTURES") || line.contains("VIDEOS")
+            {
+                let directory = line.rsplit('/').next()
+                    .and_then(|s| s.split('"').next())
+                    .expect("Malformed line in user-dirs.dirs")
+                    .to_string();
+                dirs.push(directory);
             }
         }
-    }
-
-    unsafe {
-        return VEC_USER_DIR.clone();
-    }
+        dirs
+    })
 }
 
 fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathBuf, dir_name: &str) where W: Seek {
