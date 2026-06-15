@@ -45,12 +45,12 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
 
             let arc_password = Arc::new(password);
             let mut count_handle: Vec<JoinHandle<_>> = Vec::new();
-            for i in 0..vec_dir.len() {
-                let current_directory = String::from(&vec_dir[i]);
+            for dir in vec_dir.iter() {
+                let dir = dir.clone();
                 let arc_password = Arc::clone(&arc_password);
 
                 let handle = thread::spawn(move || {
-                    backup::init(current_directory.as_str(), arc_password.as_ref());
+                    backup::init(&dir, arc_password.as_ref());
                 });
 
                 count_handle.push(handle);
