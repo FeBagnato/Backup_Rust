@@ -1,7 +1,7 @@
 use std::fs;
 
 pub fn start_ignore(){
-    let home_dir = env!("HOME");
+    let home_dir = std::env::var("HOME").expect("Não foi possível encontrar a variável HOME");
     fs::create_dir(format!("{home_dir}/IgnoredFiles"))
         .expect(format!("\nERRO: Não foi possível criar o diretório \"{home_dir}/IgnoredFiles\"\n\n")
         .as_str());
@@ -21,7 +21,7 @@ pub fn start_ignore(){
 }
 
 pub fn end_ignore(){
-    let home_dir = env!("HOME");
+    let home_dir = std::env::var("HOME").expect("Não foi possível encontrar a variável HOME");
 
     for ignored_file in fs::read_to_string("config/ignore_list.conf").unwrap().lines() {
         if ignored_file.is_empty() || ignored_file.starts_with("#") {

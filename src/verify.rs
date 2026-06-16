@@ -71,7 +71,7 @@ fn BKP_files_verify() -> Result<(), VerifyError> {
 
 #[allow(non_snake_case)]
 fn User_dirs_verify() -> Result<(), VerifyError> {
-    if Path::new(&format!("{}/.config/user-dirs.dirs", env!("HOME"))).exists() {
+    if Path::new(&format!("{}/.config/user-dirs.dirs", std::env::var("HOME").expect("Não foi possível encontrar a variável HOME"))).exists() {
         return Ok(());
     }
 

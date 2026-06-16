@@ -28,7 +28,8 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
         },
 
         Err(VerifyError::UserDirConfigNotFound) => {
-            println!("\x1b[31m\nErro:\x1b[0m Não foi possível encontrar o arquivo \"{}/.config/user-dirs.dirs\"", env!("HOME"));
+            let home = std::env::var("HOME").expect("Não foi possível encontrar a variável HOME");
+            println!("\x1b[31m\nErro:\x1b[0m Não foi possível encontrar o arquivo \"{}/.config/user-dirs.dirs\"", home);
             std::process::exit(1);
         }
     }

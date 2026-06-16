@@ -1,11 +1,10 @@
-use std::env;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::{fs, io::Seek};
 use sevenz_rust::{self, SevenZWriter, SevenZArchiveEntry, lzma};
 
 pub fn init(dir_name: &str, pass: &String){
-    let current_dir = format!("{}/{dir_name}", env!("HOME"));
+    let current_dir = format!("{}/{dir_name}", std::env::var("HOME").expect("Não foi possível encontrar a variável HOME"));
     
     println!("Adicionando arquivos de {dir_name}");
 
@@ -33,7 +32,7 @@ static VEC_USER_DIR: OnceLock<Vec<String>> = OnceLock::new();
 
 pub fn get_directories() -> &'static Vec<String> {
     VEC_USER_DIR.get_or_init(|| {
-        let file_config_dirs = format!("{}/.config/user-dirs.dirs", env!("HOME"));
+        let file_config_dirs = format!("{}/.config/user-dirs.dirs", std::env::var("HOME").expect("Não foi possível encontrar a variável HOME"));
         let mut dirs = Vec::new();
 
         for line in fs::read_to_string(&file_config_dirs)
@@ -58,7 +57,7 @@ pub fn get_directories() -> &'static Vec<String> {
 }
 
 fn add_recursive_files <W: std::io::Write>(sz: &mut SevenZWriter<W>, iten: PathBuf, dir_name: &str) where W: Seek {
-    let current_dir = format!("{}/{dir_name}", env!("HOME"));
+    let current_dir = format!("{}/{dir_name}", std::env::var("HOME").expect("Não foi possível encontrar a variável HOME"));
 
     // Verify if iten is the .7z backup file
     if let Some(iten_str) = iten.to_str() {
