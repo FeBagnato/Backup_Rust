@@ -1,10 +1,34 @@
 use rpassword;
 use verify::{start_verify, VerifyError};
-use std::{thread::{self, JoinHandle}, sync::Arc};
+use std::{thread::{self, JoinHandle}, sync::{Arc, Mutex, Condvar}};
 
 mod backup;
 mod ignore;
 mod verify;
+
+struct Semaphore {
+    count: Mutex<usize>,
+    cvar: Condvar,
+    max: usize,
+}
+
+impl Semaphore {
+    fn new(max: usize) -> Self {
+        Self { count: Mutex::new(0), cvar: Condvar::new(), max }
+    }
+    fn acquire(&self) {
+        let mut count = self.count.lock().unwrap();
+        while *count >= self.max {
+            count = self.cvar.wait(count).unwrap();
+        }
+        *count += 1;
+    }
+    fn release(&self) {
+        let mut count = self.count.lock().unwrap();
+        *count -= 1;
+        self.cvar.notify_one();
+    }
+}
 
 fn main() {
     println!("\x1b[33mCaso tenha algum arquivo ou pasta que você não queira adicionar ao backup, 
@@ -51,15 +75,21 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
 
     ignore::start_ignore();
 
+    let max_cpu = num_cpus::get() / 2;
+    let semaphore = Arc::new(Semaphore::new(max_cpu));
+
     // Start backup process
     let arc_password = Arc::new(password);
     let mut count_handle: Vec<JoinHandle<_>> = Vec::new();
     for dir in vec_dir.iter() {
         let dir = dir.clone();
         let arc_password = Arc::clone(&arc_password);
+        let arc_semaphore = Arc::clone(&semaphore);
 
         let handle = thread::spawn(move || {
+            arc_semaphore.acquire();
             backup::init(&dir, arc_password.as_ref());
+            arc_semaphore.release();
         });
 
         count_handle.push(handle);
