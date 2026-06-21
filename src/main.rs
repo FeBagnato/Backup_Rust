@@ -1,34 +1,12 @@
 use rpassword;
 use verify::{start_verify, VerifyError};
-use std::{thread::{self, JoinHandle}, sync::{Arc, Mutex, Condvar}};
+use semaphore::Semaphore;
+use std::{thread::{self, JoinHandle}, sync::Arc};
 
 mod backup;
 mod ignore;
 mod verify;
-
-struct Semaphore {
-    count: Mutex<usize>,
-    cvar: Condvar,
-    max: usize,
-}
-
-impl Semaphore {
-    fn new(max: usize) -> Self {
-        Self { count: Mutex::new(0), cvar: Condvar::new(), max }
-    }
-    fn acquire(&self) {
-        let mut count = self.count.lock().unwrap();
-        while *count >= self.max {
-            count = self.cvar.wait(count).unwrap();
-        }
-        *count += 1;
-    }
-    fn release(&self) {
-        let mut count = self.count.lock().unwrap();
-        *count -= 1;
-        self.cvar.notify_one();
-    }
-}
+mod semaphore;
 
 fn main() {
     println!("\x1b[33mCaso tenha algum arquivo ou pasta que você não queira adicionar ao backup, 
@@ -87,9 +65,9 @@ coloque o caminho em \"config/ignore_list.conf\"\x1b[0m\n");
         let arc_semaphore = Arc::clone(&semaphore);
 
         let handle = thread::spawn(move || {
-            arc_semaphore.acquire();
+            let _semaphore_guard = arc_semaphore.acquire();
             backup::init(&dir, arc_password.as_ref());
-            arc_semaphore.release();
+            // No need to call arc_semaphore.release() since this struct implements Drop
         });
 
         count_handle.push(handle);
